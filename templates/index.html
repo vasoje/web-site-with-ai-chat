@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Solutions | Pametni Web Sistemi</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav>
+        <div class="logo">AI.Gen</div>
+        <ul>
+            <li><a href="#">Usluge</a></li>
+            <li><a href="#">Portfolio</a></li>
+            <li><a href="#" class="cta-btn">Kontakt</a></li>
+        </ul>
+    </nav>
+
+    <header class="hero">
+        <h1>Transformišite biznis pomoću <span class="highlight">Veštačke Inteligencije</span></h1>
+        <p>Pravimo sajtove koji ne samo da izgledaju dobro, već i razmišljaju.</p>
+        <button onclick="toggleChat()">Isprobaj Demo Četbota</button>
+    </header>
+
+    <div id="chat-widget" class="chat-container hidden">
+        <div class="chat-header">
+            <span>AI Asistent</span>
+            <button onclick="toggleChat()">X</button>
+        </div>
+        <div id="chat-box" class="chat-messages"></div>
+        <div class="chat-input">
+            <input type="text" id="user-input" placeholder="Pitajte nešto...">
+            <button onclick="sendMessage()">Pošalji</button>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
