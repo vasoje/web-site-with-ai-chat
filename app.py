@@ -4,83 +4,161 @@ from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+from pypdf import PdfReader  # Biblioteka za čitanje PDF-a
 
-# 1. UČITAVANJE KLJUČEVA (Prvo ovo!)
+# 1. KONFIGURACIJA
 load_dotenv()
-api_key = os.getenv("GEMINI_API_KEY")
-genai.configure(api_key=api_key)
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 app = Flask(__name__)
-
-# 2. KONFIGURACIJA BAZE
-# Fajl baze će biti u folderu 'instance' (Flask ga sam pravi)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-@app.route('/history', methods=['GET'])
-def get_history():
-    # Izvuci sve poruke iz baze, sortirane po vremenu
-    messages = ChatMessage.query.order_by(ChatMessage.timestamp).all()
-    
-    # Pretvori Python objekte u JSON listu koju JS razume
-    history = []
-    for msg in messages:
-        history.append({
-            "sender": msg.sender,
-            "content": msg.content
-        })
-    
-    return jsonify(history)
+# 2. MODELI BAZE (Struktura podataka)
 
-# 3. DEFINISANJE TABELE (Model)
+# Istorija četa
 class ChatMessage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    sender = db.Column(db.String(10), nullable=False) # 'user' ili 'bot'
-    content = db.Column(db.Text, nullable=False)
+    sender = db.Column(db.String(10))
+    content = db.Column(db.Text)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
-# 4. KREIRANJE BAZE (Školski: unutar app_context-a)
+# Usluge i Cene
+class Service(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    price = db.Column(db.String(50), nullable=False)
+
+# Kontakt Informacije o Firmi (Single Source of Truth)
+class CompanyInfo(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(50), unique=True, nullable=False) # npr. 'email', 'phone'
+    value = db.Column(db.Text, nullable=False) # npr. 'vasoje@email.com'
+
+# 3. FUNKCIJE ZA UPRAVLJANJE ZNANJEM
+
+def init_db_data():
+    """Popunjava bazu početnim podacima ako je prazna"""
+    if not Service.query.first():
+        # Usluge
+        usluge = [
+            Service(name="Web Development", description="Izrada sajtova, React, Python", price="od 200€"),
+            Service(name="AI Chatbot", description="Pametni asistent za vaš sajt", price="od 150€"),
+            Service(name="SEO Optimizacija", description="Pozicioniranje na Google-u", price="100€ mesečno")
+        ]
+        db.session.add_all(usluge)
+        
+        # Kontakt podaci
+        info = [
+            CompanyInfo(key="email", value="kontakt@ai-solutions.com"),
+            CompanyInfo(key="phone", value="+381 60 123 4567"),
+            CompanyInfo(key="address", value="Tehnološki Park bb, Čačak"),
+            CompanyInfo(key="hours", value="Pon-Pet: 09-17h")
+        ]
+        db.session.add_all(info)
+        
+        db.session.commit()
+        print("✅ Baza inicijalizovana sa uslugama i kontaktima.")
+
+def read_pdf_content():
+    """Čita sve PDF fajlove iz foldera 'knowledge_base'"""
+    text_content = ""
+    kb_folder = "knowledge_base"
+    
+    if not os.path.exists(kb_folder):
+        os.makedirs(kb_folder) # Napravi folder ako ne postoji
+        return ""
+
+    for filename in os.listdir(kb_folder):
+        if filename.endswith(".pdf"):
+            try:
+                file_path = os.path.join(kb_folder, filename)
+                reader = PdfReader(file_path)
+                text_content += f"\n--- SADRŽAJ DOKUMENTA: {filename} ---\n"
+                for page in reader.pages:
+                    text_content += page.extract_text() + "\n"
+            except Exception as e:
+                print(f"Greška pri čitanju {filename}: {e}")
+                
+    return text_content
+
+# 4. INICIJALIZACIJA PRI POKRETANJU
 with app.app_context():
     db.create_all()
+    init_db_data() # Ovo pozivamo da napunimo bazu
 
-# 5. POSTAVKA GEMINI MODELA
 model = genai.GenerativeModel('gemini-2.5-flash')
 
-# 6. RUTE
+# 5. RUTE
+
 @app.route('/')
 def index():
     return render_template('index.html')
 
+@app.route('/history', methods=['GET'])
+def get_history():
+    messages = ChatMessage.query.order_by(ChatMessage.timestamp).all()
+    return jsonify([{"sender": m.sender, "content": m.content} for m in messages])
+
 @app.route('/chat', methods=['POST'])
 def chat():
-    data = request.json
-    user_text = data.get("message")
-
-    if not user_text:
-        return jsonify({"error": "Nema poruke"}), 400
-
-    # Sačuvaj poruku korisnika u bazu
-    user_msg = ChatMessage(sender='user', content=user_text)
-    db.session.add(user_msg)
+    user_text = request.json.get("message")
+    
+    # 1. Sačuvaj korisnika
+    db.session.add(ChatMessage(sender='user', content=user_text))
     
     try:
-        # Pozovi Gemini sa instrukcijom (System Prompt)
-        # Ovde ga "dresiraš" da bude tvoj prodavac
-        system_instruction = "Ti si asistent na sajtu AI Agencije. Pomažeš klijentima da razumeju kako AI može unaprediti njihov biznis. Budi kratak i profesionalan."
-        response = model.generate_content(f"{system_instruction}\n\nKorisnik kaže: {user_text}")
+        # 2. PRIKUPLJANJE ZNANJA (RAG DEO)
+        
+        # A) Čitanje usluga iz baze
+        services = Service.query.all()
+        services_text = "\n".join([f"- {s.name} ({s.price}): {s.description}" for s in services])
+        
+        # B) Čitanje kontakt podataka iz baze
+        infos = CompanyInfo.query.all()
+        contact_text = "\n".join([f"- {i.key.capitalize()}: {i.value}" for i in infos])
+        
+        # C) Čitanje PDF znanja
+        pdf_knowledge = read_pdf_content()
+
+        # 3. FORMIRANJE MOZGA (System Prompt)
+        system_instruction = f"""
+        Ti si napredni AI asistent za kompaniju 'AI Solutions'.
+        
+        TVOJI IZVORI PODATAKA (Koristi isključivo ovo):
+        
+        === KONTAKT INFORMACIJE ===
+        {contact_text}
+        
+        === NAŠE USLUGE I CENE ===
+        {services_text}
+        
+        === DODATNO ZNANJE (DOKUMENTI) ===
+        {pdf_knowledge}
+        
+        UPUTSTVO:
+        - Na pitanja o cenama i kontaktu odgovaraj precizno iz gornjih podataka.
+        - Ako odgovor postoji u dokumentima, prepričaj ga ukratko.
+        - Ako ne znaš odgovor, uputi na email: {next((i.value for i in infos if i.key == 'email'), 'admin@email.com')}
+        - Budi profesionalan i persiraj.
+        """
+
+        full_prompt = f"{system_instruction}\n\nKorisnik pita: {user_text}"
+        
+        response = model.generate_content(full_prompt)
         bot_text = response.text
 
-        # Sačuvaj odgovor bota u bazu
-        bot_msg = ChatMessage(sender='bot', content=bot_text)
-        db.session.add(bot_msg)
+        # 4. Sačuvaj bota
+        db.session.add(ChatMessage(sender='bot', content=bot_text))
         db.session.commit()
 
         return jsonify({"response": bot_text})
-    
+
     except Exception as e:
-        print(f"Greška: {e}")
-        return jsonify({"response": "Izvini, došlo je do greške u povezivanju sa mojim mozgom."}), 500
+        print(e)
+        return jsonify({"response": "Greška na serveru."}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
