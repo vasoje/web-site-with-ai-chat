@@ -38,10 +38,17 @@ function appendMessage(sender, text) {
 
     messageDiv.classList.add('message', sender === 'user' ? 'user-msg' : 'bot-msg');
     messageDiv.id = messageId;
-    messageDiv.innerText = text;
+
+// Ako je poruka od bota, parsiraj Markdown. Ako je od korisnika, ostavi običan tekst.
+    if (sender === 'bot') {
+        // marked.parse pretvara "**Tekst**" u "<b>Tekst</b>"
+        messageDiv.innerHTML = marked.parse(text);
+    } else {
+        messageDiv.innerText = text;
+    }
 
     chatBox.appendChild(messageDiv);
-    chatBox.scrollTop = chatBox.scrollHeight; // Automatski skroluj na dno
+    chatBox.scrollTop = chatBox.scrollHeight;
 
     return messageId;
 }
@@ -50,7 +57,8 @@ function appendMessage(sender, text) {
 function updateMessage(id, newText) {
     const messageDiv = document.getElementById(id);
     if (messageDiv) {
-        messageDiv.innerText = newText;
+        // I ovde koristimo marked.parse za konačan odgovor
+        messageDiv.innerHTML = marked.parse(newText);
     }
 }
 
