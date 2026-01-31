@@ -106,58 +106,65 @@ def get_history():
 def chat():
     user_text = request.json.get("message")
     
-    # 1. Sačuvaj korisnika
+    # 1. PRIPREMA ISTORIJE (Pre nego što sačuvamo novu poruku)
+    # Izvlačimo poslednjih 6 poruka da bi bot imao kontekst
+    last_messages = ChatMessage.query.order_by(ChatMessage.id.desc()).limit(6).all()
+    last_messages.reverse() # Vraćamo ih u hronološki red (od najstarije ka najnovijoj)
+    
+    history_text = "\n=== ISTORIJA RAZGOVORA ===\n"
+    if not last_messages:
+        history_text += "(Nema prethodnih poruka)\n"
+    
+    for msg in last_messages:
+        role = "Korisnik" if msg.sender == 'user' else "Ti (Asistent)"
+        history_text += f"{role}: {msg.content}\n"
+
+    # 2. Sačuvaj trenutnu poruku korisnika u bazu
+    # (Radimo ovo POSLE čitanja istorije da ne bi duplirali trenutnu poruku u kontekstu)
     db.session.add(ChatMessage(sender='user', content=user_text))
+    db.session.commit() # Obavezan commit da bi poruka dobila ID i timestamp
     
     try:
-        # 2. PRIKUPLJANJE ZNANJA (RAG DEO)
-        
-        # A) Čitanje usluga iz baze
+        # 3. PRIKUPLJANJE ZNANJA (RAG DEO - OVO OSTAJE ISTO)
         services = Service.query.all()
         services_text = "\n".join([f"- {s.name} ({s.price}): {s.description}" for s in services])
         
-        # B) Čitanje kontakt podataka iz baze
         infos = CompanyInfo.query.all()
         contact_text = "\n".join([f"- {i.key.capitalize()}: {i.value}" for i in infos])
         
-        # C) Čitanje PDF znanja
         pdf_knowledge = read_pdf_content()
 
-        # 3. FORMIRANJE MOZGA (System Prompt)
+        # 4. FORMIRANJE MOZGA (System Prompt + Istorija)
         system_instruction = f"""
         Ti si napredni AI asistent za kompaniju 'AI Solutions'.
         
-        TVOJI IZVORI PODATAKA (Koristi isključivo ovo):
-        
+        TVOJI IZVORI PODATAKA:
         === KONTAKT INFORMACIJE ===
         {contact_text}
-        
         === NAŠE USLUGE I CENE ===
         {services_text}
-        
         === DODATNO ZNANJE (DOKUMENTI) ===
         {pdf_knowledge}
         
         UPUTSTVO:
-        - Na pitanja o cenama i kontaktu odgovaraj precizno iz gornjih podataka.
-        - Ako odgovor postoji u dokumentima, prepričaj ga ukratko.
-        - Ako ne znaš odgovor, uputi na email: {next((i.value for i in infos if i.key == 'email'), 'admin@email.com')}
-        - Budi profesionalan i persiraj.
+        - Koristi istoriju razgovora da bi razumeo kontekst (npr. ako korisnik kaže "to mi se sviđa", znaj na šta misli).
+        - Odgovaraj kratko i profesionalno.
         """
 
-        full_prompt = f"{system_instruction}\n\nKorisnik pita: {user_text}"
+        # SPAJAMO SVE: Instrukcije + Istorija + Trenutno pitanje
+        full_prompt = f"{system_instruction}\n\n{history_text}\n\nKorisnik sada pita: {user_text}"
         
         response = model.generate_content(full_prompt)
         bot_text = response.text
 
-        # 4. Sačuvaj bota
+        # 5. Sačuvaj odgovor bota
         db.session.add(ChatMessage(sender='bot', content=bot_text))
         db.session.commit()
 
         return jsonify({"response": bot_text})
 
     except Exception as e:
-        print(e)
+        print(f"Greška: {e}")
         return jsonify({"response": "Greška na serveru."}), 500
 
 if __name__ == '__main__':

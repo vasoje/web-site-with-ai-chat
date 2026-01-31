@@ -3,39 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Solutions | Pametni Web Sistemi</title>
+    <title>AI Solutions | Vaš AI Partner</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=4">
 </head>
 <body>
-    <nav>
-        <div class="logo">AI.Gen</div>
-        <ul>
-            <li><a href="#">Usluge</a></li>
-            <li><a href="#">Portfolio</a></li>
-            <li><a href="#" class="cta-btn">Kontakt</a></li>
+
+    <nav class="navbar">
+        <div class="logo">AI Solutions 🚀</div>
+        <ul class="nav-links">
+            <li><a href="#services">Usluge</a></li>
+            <li><a href="#about">O nama</a></li>
+            <li><a href="#contact">Kontakt</a></li>
         </ul>
     </nav>
 
     <header class="hero">
-        <h1>Transformišite biznis pomoću <span class="highlight">Veštačke Inteligencije</span></h1>
-        <p>Pravimo sajtove koji ne samo da izgledaju dobro, već i razmišljaju.</p>
-        <button onclick="toggleChat()">Isprobaj Demo Četbota</button>
+        <div class="hero-content">
+            <h1>Budućnost je stigla.</h1>
+            <p>Implementiramo AI rešenja koja štede vaše vreme i novac.</p>
+            <button onclick="toggleChat()" class="cta-button">Isprobaj AI Agenta</button>
+        </div>
     </header>
 
-    <div id="chat-widget" class="chat-container hidden">
+    <section id="services" class="services">
+        <h2>Naše Usluge</h2>
+        <div class="service-grid">
+            <div class="card">
+                <h3>🌐 Web Development</h3>
+                <p>Moderni, brzi i responsive sajtovi prilagođeni vašem brendu.</p>
+            </div>
+            <div class="card">
+                <h3>🤖 AI Chatbotovi</h3>
+                <p>Pametni asistenti koji rade 24/7 i prodaju umesto vas.</p>
+            </div>
+            <div class="card">
+                <h3>📊 Automatizacija</h3>
+                <p>Povezivanje sistema i automatizacija dosadnih zadataka.</p>
+            </div>
+        </div>
+    </section>
+
+    <button class="chat-toggler" onclick="toggleChat()">
+        🤖 <span class="tooltip">Pitajte nas!</span>
+    </button>
+
+    <div class="chat-container" id="chat-widget">
         <div class="chat-header">
             <span>AI Asistent</span>
-            <button onclick="toggleChat()">X</button>
+            <button class="close-btn" onclick="toggleChat()">✖</button>
         </div>
-        <div id="chat-box" class="chat-messages"></div>
+        
+        <div id="chat-box">
+            </div>
+        
         <div class="chat-input">
-            <input type="text" id="user-input" placeholder="Pitajte nešto...">
-            <button onclick="sendMessage()">Pošalji</button>
+            <input type="text" id="message-input" placeholder="Pišite poruku...">
+            <button onclick="sendMessage()">➤</button>
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}?v=4"></script>
+
 </body>
 </html>

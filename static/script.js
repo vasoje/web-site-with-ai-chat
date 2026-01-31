@@ -1,47 +1,66 @@
-// Funkcija za otvaranje i zatvaranje četa
+const chatBox = document.getElementById('chat-box');
+const messageInput = document.getElementById('message-input');
+const chatWidget = document.getElementById('chat-widget');
+
+// 1. FUNKCIJA ZA OTVARANJE/ZATVARANJE CHATA
 function toggleChat() {
-    const chatWidget = document.getElementById('chat-widget');
-    chatWidget.classList.toggle('hidden');
+    // Dodajemo ili sklanjamo klasu "show-chat"
+    chatWidget.classList.toggle('show-chat');
+    
+    // Ako se otvorio, fokusiraj input polje i skroluj na dno
+    if (chatWidget.classList.contains('show-chat')) {
+        messageInput.focus();
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
 }
 
-// Funkcija za slanje poruke
+// 2. UČITAVANJE ISTORIJE
+async function loadChatHistory() {
+    try {
+        const response = await fetch('/history');
+        const messages = await response.json();
+        chatBox.innerHTML = '';
+        messages.forEach(msg => {
+            appendMessage(msg.sender, msg.content, false);
+        });
+    } catch (error) {
+        console.error("Greška pri učitavanju istorije:", error);
+    }
+}
+
+// 3. SLANJE PORUKE
 async function sendMessage() {
-    const inputField = document.getElementById('user-input');
-    const messageText = inputField.value.trim();
-    if (messageText === "") return;
+    const message = messageInput.value.trim();
+    if (message === "") return;
 
-    appendMessage('user', messageText);
-    inputField.value = "";
+    appendMessage('user', message);
+    messageInput.value = '';
 
-    const botMessageId = appendMessage('bot', 'Razmišljam...');
+    const loadingId = appendMessage('bot', 'Razmišljam...', true); 
 
-    // PRAVI POZIV KA BACKENDU
     try {
         const response = await fetch('/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: messageText })
+            body: JSON.stringify({ message: message })
         });
-        
         const data = await response.json();
-        updateMessage(botMessageId, data.response);
+        updateMessage(loadingId, data.response);
     } catch (error) {
-        updateMessage(botMessageId, "Greška: Server nije dostupan.");
+        updateMessage(loadingId, "Izvini, došlo je do greške.");
     }
 }
 
-// Pomoćna funkcija za dodavanje poruka u HTML
-function appendMessage(sender, text) {
-    const chatBox = document.getElementById('chat-box');
+// 4. RENDEROVANJE (Isto kao pre)
+function appendMessage(sender, text, isLoading = false) {
     const messageDiv = document.createElement('div');
-    const messageId = Date.now(); // Jedinstveni ID za poruku
+    const uniqueId = 'msg-' + Date.now() + Math.random().toString(36).substr(2, 9);
+    
+    messageDiv.id = uniqueId;
+    const senderClass = sender.toLowerCase() === 'user' ? 'user-msg' : 'bot-msg';
+    messageDiv.classList.add('message', senderClass);
 
-    messageDiv.classList.add('message', sender === 'user' ? 'user-msg' : 'bot-msg');
-    messageDiv.id = messageId;
-
-// Ako je poruka od bota, parsiraj Markdown. Ako je od korisnika, ostavi običan tekst.
-    if (sender === 'bot') {
-        // marked.parse pretvara "**Tekst**" u "<b>Tekst</b>"
+    if (senderClass === 'bot-msg' && !isLoading) {
         messageDiv.innerHTML = marked.parse(text);
     } else {
         messageDiv.innerText = text;
@@ -49,42 +68,23 @@ function appendMessage(sender, text) {
 
     chatBox.appendChild(messageDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
-
-    return messageId;
+    return uniqueId;
 }
 
-// Pomoćna funkcija za promenu teksta (npr. iz "Razmišljam..." u pravi odgovor)
 function updateMessage(id, newText) {
     const messageDiv = document.getElementById(id);
     if (messageDiv) {
-        // I ovde koristimo marked.parse za konačan odgovor
         messageDiv.innerHTML = marked.parse(newText);
+        chatBox.scrollTop = chatBox.scrollHeight;
     }
 }
 
-// Funkcija koja učitava istoriju
-async function loadChatHistory() {
-    try {
-        const response = await fetch('/history');
-        const messages = await response.json();
-        
-        // Prođi kroz svaku poruku i prikaži je
-        messages.forEach(msg => {
-            appendMessage(msg.sender, msg.content);
-        });
-    } catch (error) {
-        console.error("Greška pri učitavanju istorije:", error);
-    }
-}
-
-// Dozvoli slanje poruke na taster "Enter"
-document.getElementById('user-input').addEventListener('keypress', function (e) {
+// Enter za slanje
+messageInput.addEventListener('keypress', function (e) {
     if (e.key === 'Enter') {
         sendMessage();
     }
 });
 
-// OVO JE NOVO: Pozovi funkciju čim se učita prozor
-window.onload = () => {
-    loadChatHistory();
-};
+// Učitaj istoriju odmah
+window.onload = loadChatHistory;

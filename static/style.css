@@ -1,170 +1,238 @@
-/* Osnovna podešavanja */
-:root {
-    --bg-dark: #0f172a;
-    --card-bg: #1e293b;
-    --accent: #38bdf8;
-    --text-main: #f8fafc;
-    --text-dim: #94a3b8;
-}
-
-* {
-    box-sizing: border-box;
+/* --- GLOBALNI STILOVI --- */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
     padding: 0;
+    background-color: #f8f9fa;
+    color: #333;
 }
 
-body {
-    background-color: var(--bg-dark);
-    color: var(--text-main);
-    font-family: 'Inter', -apple-system, sans-serif;
-    line-height: 1.6;
-    overflow-x: hidden;
-}
-
-/* Navigacija */
-nav {
+/* NAVIGACIJA */
+.navbar {
+    background: #fff;
+    padding: 1rem 2rem;
     display: flex;
     justify-content: space-between;
-    padding: 2rem 10%;
     align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
 
 .logo {
     font-size: 1.5rem;
     font-weight: bold;
-    color: var(--accent);
-    letter-spacing: 1px;
+    color: #007bff;
 }
 
-nav ul {
-    display: flex;
+.nav-links {
     list-style: none;
-    gap: 2rem;
-}
-
-nav a {
-    color: var(--text-main);
-    text-decoration: none;
-    font-weight: 500;
-    transition: 0.3s;
-}
-
-nav a:hover {
-    color: var(--accent);
-}
-
-/* Hero sekcija */
-.hero {
-    height: 70vh;
     display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
+    gap: 20px;
+}
+
+.nav-links a {
+    text-decoration: none;
+    color: #555;
+    font-weight: 500;
+}
+
+/* HERO SEKCIJA */
+.hero {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    padding: 100px 20px;
     text-align: center;
-    padding: 0 20px;
 }
 
-.hero h1 {
-    font-size: 3.5rem;
-    margin-bottom: 1rem;
-    max-width: 800px;
-}
+.hero h1 { font-size: 3rem; margin-bottom: 10px; }
+.hero p { font-size: 1.2rem; margin-bottom: 30px; opacity: 0.9; }
 
-.highlight {
-    color: var(--accent);
-    text-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
-}
-
-.hero p {
-    font-size: 1.2rem;
-    color: var(--text-dim);
-    margin-bottom: 2rem;
-}
-
-.cta-btn {
-    background: var(--accent);
-    color: var(--bg-dark);
+.cta-button {
+    background: white;
+    color: #007bff;
     padding: 12px 30px;
-    border-radius: 8px;
     border: none;
-    font-weight: bold;
+    border-radius: 25px;
+    font-size: 1rem;
     cursor: pointer;
-    transition: 0.3s;
+    font-weight: bold;
+    transition: transform 0.2s;
+}
+.cta-button:hover { transform: scale(1.05); }
+
+/* USLUGE */
+.services {
+    padding: 50px 20px;
+    text-align: center;
+}
+.service-grid {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 30px;
+}
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    width: 300px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
-.cta-btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 20px rgba(56, 189, 248, 0.2);
-}
+/* --- CHAT WIDGET STILOVI (POPRAVLJENO) --- */
 
-/* Chat Widget - FIKSIRAN DIZAJN */
-#chat-widget {
+/* 1. Glavno dugme (Krug) */
+.chat-toggler {
     position: fixed;
     bottom: 30px;
     right: 30px;
-    width: 380px;
-    height: 500px;
-    background: var(--card-bg);
-    border: 1px solid rgba(56, 189, 248, 0.2);
-    border-radius: 16px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-    display: flex;
-    flex-direction: column;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 50%; /* Savršen krug */
+    width: 60px;
+    height: 60px;
+    font-size: 30px; /* Veličina ikonice */
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    transition: transform 0.3s;
     z-index: 1000;
+    
+    /* Centriranje ikonice */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
+.chat-toggler:hover {
+    transform: scale(1.1); /* Malo se uveća na hover */
+}
+
+/* 2. Tooltip (Tekst "Pitajte nas!" koji lebdi pored) */
+.tooltip {
+    position: absolute;
+    right: 70px; /* Pomeramo ga levo od dugmeta */
+    background-color: #333; /* Tamna pozadina */
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 14px;
+    white-space: nowrap; /* Tekst u jednom redu */
+    opacity: 0; /* U startu je nevidljiv */
+    visibility: hidden;
+    transition: opacity 0.3s;
+    pointer-events: none; /* Da ne smeta pri kliku */
+}
+
+/* Kada mišem pređeš preko dugmeta, prikaži tekst */
+.chat-toggler:hover .tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* 3. Prozor Chata (Kontejner) */
+.chat-container {
+    position: fixed;
+    bottom: 100px; /* Iznad dugmeta */
+    right: 30px;
+    width: 350px;
+    height: 450px;
+    background-color: #fff;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    display: none; /* SAKRIVEN PO DEFAULTU */
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 1001;
+    border: 1px solid #ddd;
+}
+
+/* Klasa koja se dodaje preko JS-a da prikaže chat */
+.chat-container.show-chat {
+    display: flex;
+}
+
+/* 4. Zaglavlje chata */
 .chat-header {
-    background: #2d3e50;
+    background-color: #007bff;
+    color: white;
     padding: 15px;
-    border-radius: 16px 16px 0 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+    font-weight: bold;
 }
 
-.chat-messages {
+.close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+/* 5. Unutrašnjost chata */
+#chat-box {
     flex: 1;
-    padding: 20px;
+    padding: 15px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 10px;
+    background: #f9f9f9;
+}
+
+/* Input polje */
+.chat-input {
+    display: flex;
+    padding: 10px;
+    border-top: 1px solid #eee;
+    background: white;
+}
+
+input {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    outline: none;
+    padding-left: 15px;
+}
+
+.chat-input button {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 50%;
+    margin-left: 10px;
+    cursor: pointer;
+}
+
+/* Poruke */
+.message {
+    padding: 8px 12px;
+    border-radius: 15px;
+    max-width: 80%;
+    font-size: 0.9em;
+    line-height: 1.4;
 }
 
 .user-msg {
     align-self: flex-end;
-    background: var(--accent);
-    color: var(--bg-dark);
-    padding: 10px 15px;
-    border-radius: 15px 15px 0 15px;
+    background-color: #007bff;
+    color: white;
+    border-bottom-right-radius: 2px;
 }
 
 .bot-msg {
     align-self: flex-start;
-    background: #334155;
-    color: white;
-    padding: 10px 15px;
-    border-radius: 15px 15px 15px 0;
+    background-color: #e9ecef;
+    color: #333;
+    border-bottom-left-radius: 2px;
 }
 
-.chat-input {
-    padding: 15px;
-    display: flex;
-    gap: 10px;
-    background: #1e293b;
-    border-radius: 0 0 16px 16px;
-}
-
-.chat-input input {
-    flex: 1;
-    background: #0f172a;
-    border: 1px solid #334155;
-    padding: 10px;
-    color: white;
-    border-radius: 5px;
-}
-
-.hidden {
-    display: none !important;
-}
+/* Markdown stilovi unutar poruka */
+.bot-msg p { margin: 0; }
+.bot-msg ul { margin: 5px 0; padding-left: 20px; }
+.bot-msg strong { font-weight: bold; }
