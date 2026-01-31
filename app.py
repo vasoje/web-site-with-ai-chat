@@ -52,10 +52,10 @@ def init_db_data():
         
         # Kontakt podaci
         info = [
-            CompanyInfo(key="email", value="kontakt@ai-solutions.com"),
-            CompanyInfo(key="phone", value="+381 60 123 4567"),
-            CompanyInfo(key="address", value="Tehnološki Park bb, Čačak"),
-            CompanyInfo(key="hours", value="Pon-Pet: 09-17h")
+            CompanyInfo(key="email", value="vasojevicivan@yahoo.com"),
+            CompanyInfo(key="phone", value="+381 6x xxx xxxx"),
+            CompanyInfo(key="address", value="Remote, Čačak"),
+            CompanyInfo(key="hours", value="Pon-Sub: 09-17h")
         ]
         db.session.add_all(info)
         
