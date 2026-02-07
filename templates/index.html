@@ -3,49 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Solutions | Vaš AI Partner</title>
+    <title>AI Solutions | Vasojević</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=4">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=5">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
 
     <nav class="navbar">
-        <div class="logo">AI Solutions 🚀</div>
-        <ul class="nav-links">
-            <li><a href="#services">Usluge</a></li>
-            <li><a href="#about">O nama</a></li>
-            <li><a href="#contact">Kontakt</a></li>
+        <div class="logo">AI Dev 🚀</div>
+        <div class="menu-toggle" onclick="toggleMenu()">☰</div>
+        <ul class="nav-links" id="nav-links">
+            <li><a href="#services" onclick="toggleMenu()">Usluge</a></li>
+            <li><a href="#about" onclick="toggleMenu()">O meni</a></li>
+            <li><a href="#contact" onclick="toggleMenu()">Kontakt</a></li>
         </ul>
     </nav>
 
     <header class="hero">
         <div class="hero-content">
-            <h1>Budućnost je stigla.</h1>
-            <p>Implementiramo AI rešenja koja štede vaše vreme i novac.</p>
-            <button onclick="toggleChat()" class="cta-button">Isprobaj AI Agenta</button>
+            <h1>Pametna AI Rešenja</h1>
+            <p>Master Inženjer IT-a. Specijalizovan za Python, Web Development i Veštačku Inteligenciju.</p>
+            <button onclick="toggleChat()" class="cta-button">Pokreni AI Demo</button>
         </div>
     </header>
 
-    <section id="services" class="services">
-        <h2>Naše Usluge</h2>
+    <section id="services" class="section">
+        <h2 class="section-title">Šta nudim?</h2>
         <div class="service-grid">
             <div class="card">
-                <h3>🌐 Web Development</h3>
-                <p>Moderni, brzi i responsive sajtovi prilagođeni vašem brendu.</p>
+                <i class="fas fa-code fa-2x"></i>
+                <h3>Web Development</h3>
+                <p>Full-stack rešenja (Python/Flask). Brzi i moderni sajtovi.</p>
             </div>
             <div class="card">
-                <h3>🤖 AI Chatbotovi</h3>
-                <p>Pametni asistenti koji rade 24/7 i prodaju umesto vas.</p>
+                <i class="fas fa-robot fa-2x"></i>
+                <h3>AI Integracija</h3>
+                <p>Chatbotovi, RAG sistemi i automatizacija procesa pomoću LLM-ova.</p>
             </div>
             <div class="card">
-                <h3>📊 Automatizacija</h3>
-                <p>Povezivanje sistema i automatizacija dosadnih zadataka.</p>
+                <i class="fas fa-database fa-2x"></i>
+                <h3>Podaci & Backend</h3>
+                <p>Dizajn baza podataka, API development i optimizacija.</p>
             </div>
         </div>
     </section>
 
+    <section id="about" class="section bg-light">
+        <div class="about-container">
+            <div class="about-text">
+                <h2 class="section-title">O meni</h2>
+                <p>Zdravo! Ja sam <strong>Master inženjer informacionih tehnologija</strong> sa strašću prema veštačkoj inteligenciji.</p>
+                <p>Trenutno razvijam napredna rešenja koja spajaju klasičan web development sa modernim AI tehnologijama. Ovaj sajt je primer toga – chatbot koji koristiš je treniran na mojim podacima.</p>
+                <p>Otvoren sam za saradnju na projektima koji zahtevaju inovativan pristup.</p>
+            </div>
+        </div>
+    </section>
+
+    <footer id="contact">
+        <h2>Kontaktirajte me</h2>
+        <p>Hajde da gradimo nešto zajedno.</p>
+        <div class="social-links">
+            <a href="#" target="_blank"><i class="fab fa-linkedin"></i> LinkedIn</a>
+            <a href="#" target="_blank"><i class="fab fa-github"></i> GitHub</a>
+            <a href="mailto:tvojmail@gmail.com"><i class="fas fa-envelope"></i> Email</a>
+        </div>
+        <p class="copyright">&copy; 2026 AI Solutions. Sva prava zadržana.</p>
+    </footer>
+
     <button class="chat-toggler" onclick="toggleChat()">
-        🤖 <span class="tooltip">Pitajte nas!</span>
+        🤖 <span class="tooltip">AI Asistent</span>
     </button>
 
     <div class="chat-container" id="chat-widget">
@@ -53,18 +80,21 @@
             <span>AI Asistent</span>
             <button class="close-btn" onclick="toggleChat()">✖</button>
         </div>
-        
-        <div id="chat-box">
-            </div>
-        
+        <div id="chat-box"></div>
         <div class="chat-input">
-            <input type="text" id="message-input" placeholder="Pišite poruku...">
+            <input type="text" id="message-input" placeholder="Pitajte nešto...">
             <button onclick="sendMessage()">➤</button>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="{{ url_for('static', filename='script.js') }}?v=4"></script>
-
+    <script src="{{ url_for('static', filename='script.js') }}?v=5"></script>
+    
+    <script>
+        function toggleMenu() {
+            const nav = document.getElementById('nav-links');
+            nav.classList.toggle('active');
+        }
+    </script>
 </body>
 </html>
