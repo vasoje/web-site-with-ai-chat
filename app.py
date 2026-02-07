@@ -1,7 +1,7 @@
 import os
 import google.generativeai as genai
 from dotenv import load_dotenv
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from pypdf import PdfReader
@@ -13,7 +13,20 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# OBAVEZNO: Tajni ključ za sesije (bez ovoga korpa ne radi!)
+app.secret_key = 'neka_super_tajna_sifra_koju_niko_ne_zna' 
+
 db = SQLAlchemy(app)
+
+# --- GLOBALNA LISTA PROIZVODA ---
+# Sada je ovde da bi je videle sve funkcije
+PRODUCTS = [
+    {'id': 1, 'name': 'AI Chatbot Basic', 'price': 299, 'image': '🤖', 'desc': 'Pametan asistent 24/7.'},
+    {'id': 2, 'name': 'Web Optimizacija', 'price': 149, 'image': '⚡', 'desc': 'SEO i ubrzavanje sajta.'},
+    {'id': 3, 'name': 'Python Automatizacija', 'price': 99, 'image': '🐍', 'desc': 'Skripte za dosadne poslove.'},
+    {'id': 4, 'name': 'Konsultacije (1h)', 'price': 50, 'image': '👨‍💻', 'desc': 'Rešavanje tehničkih problema.'}
+]
 
 # 2. MODELI BAZE
 # Izmena: Dodajemo session_id kolonu
@@ -34,6 +47,7 @@ class CompanyInfo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     key = db.Column(db.String(50), unique=True, nullable=False)
     value = db.Column(db.Text, nullable=False)
+
 
 # 3. HELPER FUNKCIJE
 def init_db_data():
@@ -73,11 +87,12 @@ def read_pdf_content():
                 pass
     return text_content
 
+# INICIJALIZACIJA BAZE (mora biti pre ruta)
 with app.app_context():
     db.create_all()
-    init_db_data()
+    # init_db_data() # Otkomentariši ako ti treba ponovno punjenje
 
-model = genai.GenerativeModel('gemini-2.5-flash')
+model = genai.GenerativeModel('gemini-2.5-flash') # 2.5 se koristi zbog brzine, ili 'gemini-2.5-pro' za bolje odgovore (ali sporije)
 
 # 4. RUTE
 @app.route('/')
@@ -154,8 +169,58 @@ def chat():
 
 @app.route('/shop')
 def shop():
-    # Ovde ćemo kasnije dodati proizvode
-    return render_template('shop.html')
+    return render_template('shop.html', products=PRODUCTS)
+
+@app.route('/cart')
+def cart_page():
+    # Uzmi korpu iz sesije, ili praznu listu ako nema ničega
+    cart_items = session.get('cart', [])
+    
+    # Izračunaj ukupnu cenu (sumiramo cene svih proizvoda)
+    total_price = sum(item['price'] for item in cart_items)
+    
+    return render_template('cart.html', cart=cart_items, total=total_price)
+
+# --- NOVA RUTA: DAJ BROJ STVARI U KORPI ---
+@app.route('/get_cart_count')
+def get_cart_count():
+    cart = session.get('cart', [])
+    return jsonify({'count': len(cart)})
+
+@app.route('/remove_from_cart', methods=['POST'])
+def remove_from_cart():
+    product_id = request.json.get('id')
+    cart = session.get('cart', [])
+
+    # Tražimo prvi proizvod sa tim ID-jem i brišemo ga
+    for item in cart:
+        if item['id'] == product_id:
+            cart.remove(item) # Briše samo prvi na koji naiđe
+            session.modified = True # Javljamo Flasku da sačuva promenu
+            break # Prekidamo petlju da ne bi obrisali sve iste proizvode
+
+    return jsonify({'status': 'success', 'count': len(cart)})
+
+# --- NOVA RUTA: DODAJ U KORPU ---
+@app.route('/add_to_cart', methods=['POST'])
+def add_to_cart():
+    product_id = request.json.get('id')
+    
+    # Nađi proizvod u listi
+    product = next((p for p in PRODUCTS if p['id'] == product_id), None)
+    
+    if product:
+        # Ako 'cart' ne postoji u sesiji, napravi praznu listu
+        if 'cart' not in session:
+            session['cart'] = []
+        
+        # Ubaci proizvod u sesiju
+        session['cart'].append(product)
+        session.modified = True # Kažemo Flasku da smo nešto promenili
+        
+        return jsonify({'status': 'success', 'count': len(session['cart'])})
+    
+    return jsonify({'status': 'error'}), 404
 
 if __name__ == '__main__':
     app.run(debug=True)

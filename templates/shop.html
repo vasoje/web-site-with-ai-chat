@@ -3,11 +3,89 @@
 {% block title %}Demo Shop | AI Solutions{% endblock %}
 
 {% block content %}
-<div class="section">
-    <h1>🚧 Demo Shop</h1>
-    <p>Ova stranica je trenutno u izradi.</p>
-    <p>Uskoro ćete moći da isprobate lažnu kupovinu AI usluga!</p>
-    <br>
-    <a href="{{ url_for('index') }}" class="cta-button">Nazad na početnu</a>
+
+<div class="shop-nav-bar">
+    <h2>🛍️ Demo Shop</h2>
+    
+    <a href="{{ url_for('cart_page') }}" class="cart-button">
+        Moja korpa 🛒 <span id="cart-count" class="badge">0</span>
+    </a>
 </div>
+
+<div class="shop-container">
+    {% for product in products %}
+    <div class="product-card">
+        <div class="product-icon">{{ product.image }}</div>
+        <h3>{{ product.name }}</h3>
+        <p class="desc">{{ product.desc }}</p>
+        <div class="price-tag">{{ product.price }} €</div>
+        <button class="buy-btn" onclick="addToCart({{ product.id }})">Dodaj u korpu</button>
+    </div>
+    {% endfor %}
+</div>
+
+<div style="text-align: center; margin: 40px;">
+    <a href="{{ url_for('index') }}" class="back-link">← Izađi iz prodavnice</a>
+</div>
+
+<script>
+    async function addToCart(productId) {
+        try {
+            const response = await fetch('/add_to_cart', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: productId })
+            });
+            const data = await response.json();
+            if (data.status === 'success') {
+                document.getElementById('cart-count').innerText = data.count;
+                // Malo lepši alert (opciono)
+                console.log("Dodato!");
+            }
+        } catch (error) { console.error(error); }
+    }
+
+    async function updateCartCount() {
+        const res = await fetch('/get_cart_count');
+        const data = await res.json();
+        document.getElementById('cart-count').innerText = data.count;
+    }
+    
+    updateCartCount();
+</script>
+
+<style>
+    /* LOCAL STYLES ZA SHOP NAVIGACIJU */
+    .shop-nav-bar {
+        background-color: #333;
+        color: white;
+        padding: 15px 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-radius: 10px;
+        margin: 20px auto;
+        max-width: 1200px;
+    }
+    
+    .cart-button {
+        background-color: white;
+        color: #333;
+        text-decoration: none;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+        transition: 0.3s;
+    }
+    .cart-button:hover { background-color: #ddd; }
+    
+    .badge {
+        background-color: red;
+        color: white;
+        border-radius: 50%;
+        padding: 2px 6px;
+        font-size: 12px;
+        margin-left: 5px;
+    }
+</style>
 {% endblock %}
