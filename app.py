@@ -152,5 +152,10 @@ def chat():
         print(e)
         return jsonify({"response": "Greška na serveru."}), 500
 
+@app.route('/shop')
+def shop():
+    # Ovde ćemo kasnije dodati proizvode
+    return render_template('shop.html')
+
 if __name__ == '__main__':
     app.run(debug=True)

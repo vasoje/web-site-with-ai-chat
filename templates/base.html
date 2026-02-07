@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AI Solutions | Vasojević{% endblock %}</title>
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=6">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    {% block head %}{% endblock %}
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="logo">AI Dev 🚀</div>
+        <div class="menu-toggle" onclick="toggleMenu()">☰</div>
+        <ul class="nav-links" id="nav-links">
+            <li><a href="{{ url_for('index') }}#services" onclick="toggleMenu()">Usluge</a></li>
+            <li><a href="{{ url_for('index') }}#about" onclick="toggleMenu()">O meni</a></li>
+            <li><a href="{{ url_for('shop') }}" onclick="toggleMenu()">Demo Shop</a></li> <li><a href="{{ url_for('index') }}#contact" onclick="toggleMenu()">Kontakt</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer id="contact">
+        <h2>Kontaktirajte me</h2>
+        <p>Hajde da gradimo nešto zajedno.</p>
+        <div class="social-links">
+            <a href="#" target="_blank"><i class="fab fa-linkedin"></i> LinkedIn</a>
+            <a href="#" target="_blank"><i class="fab fa-github"></i> GitHub</a>
+            <a href="mailto:tvojmail@gmail.com"><i class="fas fa-envelope"></i> Email</a>
+        </div>
+        <p class="copyright">&copy; 2026 AI Solutions. Sva prava zadržana.</p>
+    </footer>
+
+    <button class="chat-toggler" onclick="toggleChat()">
+        🤖 <span class="tooltip">AI Asistent</span>
+    </button>
+
+    <div class="chat-container" id="chat-widget">
+        <div class="chat-header">
+            <span>AI Asistent</span>
+            <button class="close-btn" onclick="toggleChat()">✖</button>
+        </div>
+        <div id="chat-box"></div>
+        <div class="chat-input">
+            <input type="text" id="message-input" placeholder="Pitajte nešto...">
+            <button onclick="sendMessage()">➤</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}?v=6"></script>
+    <script>
+        function toggleMenu() {
+            const nav = document.getElementById('nav-links');
+            nav.classList.toggle('active');
+        }
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>
