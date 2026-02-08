@@ -1,5 +1,8 @@
 import os, time, random, requests
 import google.generativeai as genai
+import io, base64
+from huggingface_hub import InferenceClient
+from PIL import Image
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
@@ -307,6 +310,52 @@ def dashboard():
                              current_price=f"{prices[-1]} (Demo)",
                              currency=currency,
                              symbol=currency_symbol)
+    
+# --- AI IMAGE GENERATOR ---
+
+# URL modela (Koristimo Stable Diffusion v1.5 - jedan od najboljih besplatnih)
+API_URL = "https://router.huggingface.co/models/runwayml/stable-diffusion-v1-5"
+headers = {"Authorization": f"Bearer {os.getenv('HUGGINGFACE_API_KEY')}"}
+
+# --- DEO 1: Prikaz stranice  ---
+@app.route('/generate_image_page')
+def generate_image_page():
+    return render_template('image_gen.html')
+
+# --- DEO 2: Logika za generisanje ---
+# --- AI IMAGE GENERATOR (HUGGING FACE CLIENT) ---
+@app.route('/generate_image', methods=['POST'])
+def generate_image():
+    prompt = request.json.get('prompt')
+    if not prompt:
+        return jsonify({'error': 'Molim vas unesite opis slike.'}), 400
+
+    try:
+        # Koristimo zvanični klijent - on sam nalazi pravi URL
+        client = InferenceClient(
+            "stabilityai/stable-diffusion-xl-base-1.0", 
+            token=os.getenv("HUGGINGFACE_API_KEY")
+        )
+
+        # Generišemo sliku (ovo vraća PIL Image objekat direktno)
+        image = client.text_to_image(prompt)
+
+        # Pretvaramo sliku u Base64 za prikaz na sajtu
+        buffered = io.BytesIO()
+        image.save(buffered, format="JPEG")
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+        
+        return jsonify({'image': img_str})
+
+    except Exception as e:
+        # Ovde hvatamo greške (npr. ako je model zauzet ili se učitava)
+        print(f"HF Greška: {e}")
+        
+        # Ako je greška vezana za limit ili učitavanje
+        if "503" in str(e) or "loading" in str(e).lower():
+            return jsonify({'error': 'Model se budi... Sačekajte 20 sekundi pa probajte ponovo.'}), 503
+            
+        return jsonify({'error': f"Došlo je do greške: {str(e)}"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

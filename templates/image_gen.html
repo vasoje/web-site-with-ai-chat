@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}AI Generator Slika | AI Solutions{% endblock %}
+
+{% block content %}
+<div class="generator-container">
+    <header class="gen-header">
+        <h1>🎨 AI Umetnik</h1>
+        <p>Opišite šta želite da vidite, a veštačka inteligencija će to nacrtati.</p>
+    </header>
+
+    <div class="input-area">
+        <input type="text" id="prompt-input" placeholder="Npr: Astronaut jaše konja na Marsu, digital art..." onkeypress="handleEnter(event)">
+        <button onclick="generateImage()" id="gen-btn">Generiši ✨</button>
+    </div>
+
+    <div class="image-result-area" id="result-area">
+        
+        <div class="loader" id="loader" style="display: none;">
+            <div class="spinner"></div>
+            <p>Crtam vašu sliku... (ovo traje oko 10s)</p>
+        </div>
+
+        <img id="generated-image" src="" alt="AI Generated Image" style="display: none;">
+        
+        <div id="error-message" style="color: red; display: none; margin-top: 20px;"></div>
+    </div>
+</div>
+
+<script>
+    function handleEnter(e) {
+        if(e.key === 'Enter') generateImage();
+    }
+
+    async function generateImage() {
+        const prompt = document.getElementById('prompt-input').value;
+        const btn = document.getElementById('gen-btn');
+        const loader = document.getElementById('loader');
+        const img = document.getElementById('generated-image');
+        const errorDiv = document.getElementById('error-message');
+
+        if (!prompt) {
+            alert("Molim vas unesite opis!");
+            return;
+        }
+
+        // Resetovanje stanja
+        img.style.display = 'none';
+        errorDiv.style.display = 'none';
+        loader.style.display = 'block'; // Prikaži loader
+        btn.disabled = true;
+        btn.innerText = "Crtam...";
+
+        try {
+            const response = await fetch('/generate_image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: prompt })
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                errorDiv.innerText = "Greška: " + data.error;
+                errorDiv.style.display = 'block';
+            } else {
+                // Prikaz slike
+                img.src = "data:image/jpeg;base64," + data.image;
+                img.style.display = 'block';
+            }
+
+        } catch (error) {
+            console.error(error);
+            errorDiv.innerText = "Došlo je do greške na serveru.";
+            errorDiv.style.display = 'block';
+        } finally {
+            // Vraćamo dugme u normalu
+            loader.style.display = 'none';
+            btn.disabled = false;
+            btn.innerText = "Generiši ✨";
+        }
+    }
+</script>
+
+<style>
+    .generator-container { max-width: 800px; margin: 40px auto; padding: 20px; text-align: center; }
+    
+    .input-area {
+        display: flex;
+        gap: 10px;
+        margin: 30px 0;
+    }
+    
+    input[type="text"] {
+        flex: 1;
+        padding: 15px;
+        border: 2px solid #ddd;
+        border-radius: 25px;
+        font-size: 1rem;
+        outline: none;
+        transition: 0.3s;
+    }
+    input[type="text"]:focus { border-color: #007bff; }
+    
+    #gen-btn {
+        padding: 15px 30px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 25px;
+        font-weight: bold;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: 0.3s;
+    }
+    #gen-btn:hover { background: #0056b3; }
+    #gen-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+    .image-result-area {
+        min-height: 400px;
+        background: #f8f9fa;
+        border-radius: 15px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border: 2px dashed #ddd;
+        padding: 20px;
+        flex-direction: column;
+    }
+
+    #generated-image {
+        max-width: 100%;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    /* Loader animacija */
+    .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #007bff;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 15px;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+</style>
+{% endblock %}
