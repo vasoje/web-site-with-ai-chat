@@ -1,4 +1,4 @@
-import os
+import os, time, random, requests
 import google.generativeai as genai
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify, session
@@ -27,6 +27,11 @@ PRODUCTS = [
     {'id': 3, 'name': 'Python Automatizacija', 'price': 99, 'image': '🐍', 'desc': 'Skripte za dosadne poslove.'},
     {'id': 4, 'name': 'Konsultacije (1h)', 'price': 50, 'image': '👨‍💻', 'desc': 'Rešavanje tehničkih problema.'}
 ]
+
+# GLOBALNI KEŠ (Ovde pamtimo podatke)
+# Izgledaće ovako: {'eur': {'timestamp': 123456, 'data': ...}}
+CACHE = {} 
+CACHE_DURATION = 300 # 300 sekundi = 5 minuta (koliko dugo su podaci "sveži")
 
 # 2. MODELI BAZE
 # Izmena: Dodajemo session_id kolonu
@@ -221,6 +226,87 @@ def add_to_cart():
         return jsonify({'status': 'success', 'count': len(session['cart'])})
     
     return jsonify({'status': 'error'}), 404
+
+@app.route('/dashboard')
+def dashboard():
+    currency = request.args.get('currency', 'eur')
+    if currency not in ['eur', 'usd']: currency = 'eur'
+    currency_symbol = "€" if currency == 'eur' else "$"
+    
+    current_time = time.time()
+    
+    # 1. PROVERA KEŠA (Da li imamo sveže podatke?)
+    # Ako podaci postoje I ako je prošlo manje od 5 minuta od kad smo ih skinuli
+    if currency in CACHE and (current_time - CACHE[currency]['timestamp'] < CACHE_DURATION):
+        print(f"⚡ Vraćam podatke iz KEŠA za {currency} (nisam zvao API)")
+        return render_template('dashboard.html', 
+                             symbol=currency_symbol,
+                             currency=currency,
+                             **CACHE[currency]['data']) # Raspakujemo podatke
+
+    # 2. AKO NEMA KEŠA, ZOVEMO API
+    url = f"https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency={currency}&days=7"
+    
+    try:
+        print(f"🌐 Zovem CoinGecko API za {currency}...")
+        response = requests.get(url, timeout=5)
+        response.raise_for_status() # Proverava greške
+        
+        data = response.json()
+        prices = []
+        dates = []
+        
+        for item in data['prices']:
+            timestamp = item[0] / 1000
+            price = item[1]
+            date_obj = datetime.fromtimestamp(timestamp)
+            formatted_date = date_obj.strftime('%d.%m')
+            dates.append(formatted_date)
+            prices.append(round(price, 2))
+            
+        current_price = prices[-1] if prices else 0
+        
+        # Pripremamo podatke za slanje
+        template_data = {
+            'dates': dates,
+            'prices': prices,
+            'current_price': current_price
+        }
+
+        # 3. ČUVAMO U KEŠ (DA IMAMO ZA SLEDEĆI PUT)
+        CACHE[currency] = {
+            'timestamp': current_time,
+            'data': template_data
+        }
+        
+        return render_template('dashboard.html', 
+                             symbol=currency_symbol,
+                             currency=currency,
+                             **template_data)
+
+    except Exception as e:
+        print(f"⚠️ API Greška: {e}")
+        
+        # 4. FALLBACK: Ako API pukne, a imamo BILO ŠTA u kešu (makar i staro), daj to!
+        if currency in CACHE:
+            print("♻️ Vraćam STARE podatke iz keša (jer API ne radi)")
+            return render_template('dashboard.html', 
+                                 symbol=currency_symbol,
+                                 currency=currency,
+                                 **CACHE[currency]['data'])
+        
+        # 5. AKO BAŠ NIŠTA NEMAMO (Prvi put palimo app, a nema neta) -> DEMO PODACI
+        print("🎲 Generišem DEMO podatke...")
+        dates = [(datetime.now().strftime('%d.%m'))] * 7
+        base = 90000 if currency == 'eur' else 98000
+        prices = [base + random.randint(-1000, 1000) for _ in range(7)]
+        
+        return render_template('dashboard.html', 
+                             dates=dates, 
+                             prices=prices, 
+                             current_price=f"{prices[-1]} (Demo)",
+                             currency=currency,
+                             symbol=currency_symbol)
 
 if __name__ == '__main__':
     app.run(debug=True)
